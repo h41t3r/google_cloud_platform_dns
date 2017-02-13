@@ -7,4 +7,3 @@ Replace the serviceaccountcredential_json.key file with your own Service Account
 You'll need to update the script and change the following lines to reflect your own project and zone file name (as defined in your Google Cloud Platform account):
 
 project = 'ENTER_PROJECT_NAME'
-managedZone = 'ENTER_ZONE_NAME'
