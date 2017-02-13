@@ -14,7 +14,7 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name('serviceaccountcr
 service = discovery.build('dns', 'v1', credentials=credentials)
 # production project and production zone file
 project = 'ENTER_PROJECT_NAME'
-managedZone = 'ENTER_ZONE_NAME'
+managedZone = ''
 
 
 
@@ -73,6 +73,9 @@ def update_rr_record(name, action, values):
 	# CNAME's record can only exist once and you can not remove the FQDN value of the CNAME. Instead you must remove the entire record.
 	# Ex. 'cname.cryptik.org CNAME to cryptik.org'
 	# cname.cryptik.org can't have two CNAME values. And you cant remove the existing cryptik.org value. Instead you delete the entire 'test.cryptik.org' record
+	if not re.match('\.$', name):
+		name = name + '.'
+
 	if record_old['type'] == 'CNAME':
 		print "Record set already exist and can't be a CNAME to multiple FQDNs nor can you remove what it is a CNAME to without removing the entire record set instead:\n"
 		print_rr_record([name])
@@ -171,20 +174,24 @@ def parse_args():
 	subparsers = parser.add_subparsers(help='sub-command help', dest='subparser_name')
 
 	parser_print = subparsers.add_parser('printrecords', help='Print all or specific records')
+	parser_print.add_argument('-zone', dest='zone', required=True, help='ManagedZone name as displayed in Google CloudDNS. Ex. cryptik')
 	parser_print.add_argument('-name', nargs='*', dest='names', required=False, help='Print specific records. Ex. test1.cryptik.org test2.cryptik.org') 
 
 	parser_update = subparsers.add_parser('updaterecord', help='Update an existing record')
+	parser_update.add_argument('-zone', dest='zone', required=True, help='ManagedZone name as displayed in Google CloudDNS. Ex. eyezone, ermisvc, eyedemand')
 	parser_update.add_argument('-action',  dest='action', required=True, help='Action can be "remove" or "add"')
 	parser_update.add_argument('-name',  dest='name', required=True, help='Name of record to be updated')
 	parser_update.add_argument('-values', nargs='*', dest='values', required=True, help='Data to be added or removed from record set. Ex. 22.11.33.22 44.12.34.22')
 
 	parser_create = subparsers.add_parser('createrecord', help='Create A record or CNAME record to be added to zone file')
+	parser_create.add_argument('-zone', dest='zone', required=True, help='ManagedZone name as displayed in Google CloudDNS. Ex. cryptik')
 	parser_create.add_argument('-name',  dest='name', required=True, help='Name of your record, e.g. test1.cryptik.org')
 	parser_create.add_argument('-recordtype', dest='recordtype', required=True, help='Type of record being added. Limiting this to either "A" or "CNAME" for our script')
 	parser_create.add_argument('-values', nargs='*', dest='values', required=True, help='A space-separated list of ips (A record) or hostnames (CNAME), e.g. 192.168.0.1 or test1.cryptik.org')
 	parser_create.add_argument('-ttl', dest='ttl', required=True, help='TTL to be used for this record. Default is 300s (5 min)')
 
 	parser_delete = subparsers.add_parser('deleterecord', help='Delete A records or CNAME records')
+	parser_delete.add_argument('-zone', dest='zone', required=True, help='ManagedZone name as displayed in Google CloudDNS. Ex. cryptik')
 	parser_delete.add_argument('-name', nargs=1, dest='name', required=True, help='Name of records to be deleted. Ex. arecord.cryptik.org brecord.cryptik.org')
 	parser_delete.add_argument('-recordtype', dest='recordtype', required=True, help='Type of record being deleted. Limiting this to either "A" or "CNAME" for our script')
 
@@ -193,6 +200,8 @@ def parse_args():
 
 if __name__ == '__main__':
 	args = parse_args()
+
+	managedZone = args.zone
 
 	if args.subparser_name == 'printrecords':
 		print_rr_record(args.names)
